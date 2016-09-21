@@ -14,11 +14,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BeanHelper {
 	static class ReflectionInfo {
 		/**
-		 * all stored as lowercase
+		 * Get方法集合 key：field name value:Method
+		 * key 都是小写
 		 */
 		Map<String, Method> readMap = new HashMap<String, Method>();
 		/**
-		 * all stored as lowercase
+		 * Set方法集合 key：field name value:Method
+		 * key 都是小写
 		 */
 		Map<String, Method> writeMap = new HashMap<String, Method>();
 		Method getReadMethod(String prop) {
@@ -28,7 +30,12 @@ public class BeanHelper {
 			return prop == null ? null : writeMap.get(prop.toLowerCase());
 		}
 	}
+	
+	
 	protected static final Object[] NULL_ARGUMENTS = {};
+	/**
+	 *缓存： 根据VO名称(pub.javabean.BillYs)找到该对象的ReflectionInfo
+	 */
 	private static Map<String, ReflectionInfo> cache = new ConcurrentHashMap<String, ReflectionInfo>();
 	private static BeanHelper bhelp = new BeanHelper();
 	public static BeanHelper getInstance() {
@@ -36,7 +43,7 @@ public class BeanHelper {
 	}
 	private BeanHelper() {}
 	/**
-	 * ���ض��������������
+	 * 返回对象的所有属性名
 	 * 
 	 * @param bean
 	 * @return
@@ -45,7 +52,7 @@ public class BeanHelper {
 		return Arrays.asList(getInstance().getPropertiesAry(bean));
 	}
 	/**
-	 * ���ض��������������
+	 * 返回对象的所有属性名
 	 * 
 	 * @param bean
 	 * @return
@@ -62,7 +69,7 @@ public class BeanHelper {
 		return propertys.toArray(new String[0]);
 	}
 	/**
-	 * ��ȡbean���������ֵ
+	 * 获取bean对象的属性值
 	 * 
 	 * @param bean
 	 * @param propertyName
@@ -84,7 +91,7 @@ public class BeanHelper {
 		}
 	}
 	/**
-	 * ��������bean���������ֵ
+	 * 批量返回bean对象的属性值
 	 * 
 	 * @param bean
 	 * @param propertys
@@ -107,13 +114,7 @@ public class BeanHelper {
 		}
 		return result;
 	}
-	/**
-	 * �������Ե�set����
-	 * 
-	 * @param bean
-	 * @param propertyName
-	 * @return
-	 */
+	
 	public static Method getMethod(Object bean, String propertyName) {
 		return getInstance().getMethod(bean, propertyName, true);
 	}
@@ -124,7 +125,7 @@ public class BeanHelper {
 		return getInstance().getMethod(bean, propertyName, true);
 	}
 	/**
-	 * �����������Ե�set����
+	 * 批量返回属性的set方法
 	 * 
 	 * @param bean
 	 * @param propertys
@@ -133,10 +134,18 @@ public class BeanHelper {
 	public static Method[] getMethods(Object bean, String[] propertys) {
 		return getInstance().getMethods(bean, propertys, true);
 	}
+	
+	/**
+	 * 解析传过来的VO有哪些方法，其中将Set方法存进全局变量readMap里(key=field,value=Method).
+	 * @param bean
+	 * @param propertys
+	 * @param isSetMethod
+	 * @return
+	 */
 	private Method[] getMethods(Object bean, String[] propertys, boolean isSetMethod) {
 		Method[] methods = new Method[propertys.length];
 		ReflectionInfo reflectionInfo = null;
-		reflectionInfo = cachedReflectionInfo(bean.getClass());
+		reflectionInfo = cachedReflectionInfo(bean.getClass());//解析传过来的VO有哪些方法
 		for (int i = 0; i < propertys.length; i++) {
 			Method method = null;
 			if (isSetMethod) {
@@ -148,6 +157,14 @@ public class BeanHelper {
 		}
 		return methods;
 	}
+	
+	/**
+	 * return field Method
+	 * @param bean
+	 * @param propertyName
+	 * @param isSetMethod
+	 * @return
+	 */
 	private Method getMethod(Object bean, String propertyName, boolean isSetMethod) {
 		Method method = null;
 		ReflectionInfo reflectionInfo = null;
@@ -162,6 +179,8 @@ public class BeanHelper {
 	private ReflectionInfo cachedReflectionInfo(Class<?> beanCls) {
 		return cacheReflectionInfo(beanCls, null);
 	}
+	
+	
 	private ReflectionInfo cacheReflectionInfo(Class<?> beanCls, List<PropDescriptor> pdescriptor) {
 		String key = beanCls.getName();
 		ReflectionInfo reflectionInfo = cache.get(key);
@@ -173,7 +192,7 @@ public class BeanHelper {
 				if (pdescriptor != null) {
 					propDesc.addAll(pdescriptor);
 				} else {
-					propDesc = getPropertyDescriptors(beanCls);
+					propDesc = getPropertyDescriptors(beanCls);//解析传过来的VO有哪些方法
 					
 					
 				}
@@ -226,7 +245,7 @@ public class BeanHelper {
 		}
 	}
 	/*
-	 * ��������get�ķ���
+	 * 返回所有get的方法
 	 */
 	public Method[] getAllGetMethod(Class<?> beanCls, String[] fieldNames) {
 		Method[] methods = null;
@@ -239,6 +258,12 @@ public class BeanHelper {
 		methods = al.toArray(new Method[al.size()]);
 		return methods;
 	}
+	
+	/**
+	 * 根据class参数，
+	 * @param clazz
+	 * @return
+	 */
 	private List<PropDescriptor> getPropertyDescriptors(Class<?> clazz) {
 		List<PropDescriptor> descList = new ArrayList<PropDescriptor>();
 		List<PropDescriptor> superDescList = new ArrayList<PropDescriptor>();
@@ -306,9 +331,21 @@ public class BeanHelper {
 	
 }
 class PropDescriptor {
+	/**
+	 * VO对象类型
+	 */
 	private Class<?> beanType;
+	/**
+	 * 返回类型 
+	 */
 	private Class<?> propType;
+	/**
+	 * field name example:id
+	 */
 	private String name;
+	/**
+	 * first field name is Upper  example:Id
+	 */
 	private String baseName;
 	public PropDescriptor(Class<?> beanType, Class<?> propType, String propName) {
 		if (beanType == null) {
@@ -326,7 +363,12 @@ class PropDescriptor {
 			this.baseName =changeFirstCharacterCase(true, propName);
 		}
 	}
-	
+	/**
+	 * 将首字母转化成大写
+	 * @param capitalize
+	 * @param str
+	 * @return
+	 */
 	private static String changeFirstCharacterCase(boolean capitalize,
 			String str) {
 		int strLen;
@@ -343,7 +385,10 @@ class PropDescriptor {
 		return buf.toString();
 	}
 	/**
-	 * currBean my override get and set.
+	 * PropDescriptor
+	 * 根据参数currBean获取PropDescriptor中baseName的Get方法
+	 * @param currBean
+	 * @return
 	 */
 	public synchronized Method getReadMethod(Class<?> currBean) {
 		Method readMethod;
@@ -363,7 +408,7 @@ class PropDescriptor {
 			readMethod = findMemberMethod(classStart, readMethodName, 0, null);
 		}
 		if (readMethod != null) {
-			int mf = readMethod.getModifiers();
+			int mf = readMethod.getModifiers();//拿到该方法的修饰符，public，private,protected static 等等..
 			if (!Modifier.isPublic(mf)) {
 				return null;
 			}
@@ -374,6 +419,13 @@ class PropDescriptor {
 		}
 		return readMethod;
 	}
+	
+	/**
+	 * PropDescriptor
+	 * 根据参数currBean获取PropDescriptor中baseName的Set方法
+	 * @param currBean
+	 * @return
+	 */
 	public synchronized Method getWriteMethod(Class<?> currBean) {
 		Method writeMethod;
 		String writeMethodName = null;
@@ -396,6 +448,13 @@ class PropDescriptor {
 		}
 		return writeMethod;
 	}
+	
+	/**
+	 * 返回readMethod或者writeMethod方法的返回类型 两个参数中如果都不为空,优先readMethod
+	 * @param readMethod
+	 * @param writeMethod
+	 * @return
+	 */
 	@SuppressWarnings("rawtypes")
 	private Class<?> findPropertyType(Method readMethod, Method writeMethod) {
 		Class<?> propertyType = null;
@@ -409,6 +468,14 @@ class PropDescriptor {
 		return propertyType;
 	}
 	
+	/**
+	 * 在beanClass中，找到mName的方法，如果在beanClass找不到就在父类中查找,直到Object都找不到为止
+	 * @param beanClass
+	 * @param mName
+	 * @param num
+	 * @param args
+	 * @return
+	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private Method findMemberMethod(Class<?> beanClass, String mName, int num, Class[] args) {
 		Method foundM = null;
